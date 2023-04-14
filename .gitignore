@@ -1,0 +1,6 @@
+**/*.html
+**/*.build
+**/*.exe
+**/*.pdb
+**/osor_vulkan/**
+**/*.dll
