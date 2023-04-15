@@ -24,9 +24,9 @@ vkal_create_instance_sdl :: (window : *SDL_Window, instance_extensions : []strin
     app_info := VkApplicationInfo.{
         sType = .VK_STRUCTURE_TYPE_APPLICATION_INFO ,
         pApplicationName = "vulkan application",
-        applicationVersion = 0x000001,
+        applicationVersion = VK_MAKE_VERSION(0, 0, 1),
         pEngineName = "cool vulkan rendering engine!",
-        engineVersion = 0x000001,
+        engineVersion = VK_MAKE_VERSION(0, 0, 1),
         apiVersion = VK_API_VERSION_1_3
     };
 
@@ -40,24 +40,15 @@ vkal_create_instance_sdl :: (window : *SDL_Window, instance_extensions : []strin
         // See what is available on this machine
         vkEnumerateInstanceExtensionProperties(null, *vkal_info.instance_extension_count, null);
         print("Available Instance Extension:\n");
-        print("-----------------------------\n");
-        // temp_instance_extensions := NewArray(vkal_info.instance_extension_count, VkExtensionProperties);
-        // defer free(temp_instance_extensions.data);
+        print("-----------------------------\n");                
         array_resize(*vkal_info.instance_extensions, vkal_info.instance_extension_count);
         vkEnumerateInstanceExtensionProperties(null, *vkal_info.instance_extension_count, vkal_info.instance_extensions.data);
         for vkal_info.instance_extensions {
-            print("    %, Ver.  %\n", to_string(it.extensionName.data), it.specVersion);        
-          //  array_add(*vkal_info.instance_extensions, it);
+            print("    %, Ver.  %\n", to_string(it.extensionName.data), it.specVersion);                  
         }
         print("\n");
 
-        // Enable requested extensions
-        // uint32_t required_extension_count = 0;
-        // if (!SDL_Vulkan_GetInstanceExtensions(window, &required_extension_count, NULL)) {
-        //     printf("[VKAL] %s\n", SDL_GetError());
-        //     getchar();
-        //     exit(-1);
-        // }
+        // Get necessary extensions requested by SDL and add our own to the list
         print("Load requested extensions:\n");
         print("--------------------------\n");
         required_extension_count : u32;
@@ -67,9 +58,7 @@ vkal_create_instance_sdl :: (window : *SDL_Window, instance_extensions : []strin
         }
         print("    SDL wants % extensions:\n", required_extension_count);
         total_extension_count : u32 = required_extension_count + cast(u32)instance_extensions.count;
-        // Get the required extensions that SDL tells us that we must have:
-        all_instance_extensions := cast(**u8)alloc(256 * total_extension_count);
-        //array_resize(*all_instance_extensions, required_extension_count);
+        all_instance_extensions := cast(**u8)alloc(256 * total_extension_count); // TODO: destroy
         SDL_Vulkan_GetInstanceExtensions(window, *required_extension_count, all_instance_extensions);
         for i : 0..required_extension_count-1 {            
             print("        %\n", to_string(all_instance_extensions[i]));
@@ -89,6 +78,8 @@ vkal_create_instance_sdl :: (window : *SDL_Window, instance_extensions : []strin
         }
         print("\n");
 
+        // Finally, check if extensions requested by SDL and us are available.
+        // Enable them, if that is the case.
         print("Check requested Instance Extensions:\n");
         print("------------------------------------\n");
         supported_extensions : [..]string;
@@ -126,7 +117,7 @@ vkal_create_instance_sdl :: (window : *SDL_Window, instance_extensions : []strin
         // enable requested layers
         print("Check requested Instance Layers:\n");
         print("--------------------------------\n");
-        instance_layers_ptr := cast(**u8)alloc(256 * instance_layers.count);
+        instance_layers_ptr := cast(**u8)alloc(256 * instance_layers.count); // TODO: Destroy
         layer_ok := false;
         for instance_layers {
             print("    Check layer: % ", it);
@@ -135,7 +126,7 @@ vkal_create_instance_sdl :: (window : *SDL_Window, instance_extensions : []strin
                 // TODO: Should we abort here?
                 print("-> NOT AVAILABLE!\n");                
             } else {
-                instance_layers_ptr[it_index] = cast(*u8)instance_layers[it_index].data;
+                instance_layers_ptr[it_index] = cast(*u8)it.data;
                 print("-> OK!\n");
             }
         }
@@ -150,7 +141,7 @@ vkal_create_instance_sdl :: (window : *SDL_Window, instance_extensions : []strin
     if result != .SUCCESS { // TODO: Will not complain about non existent layer names!!!
         print("Sorry! vkCreateInstance failed: %\n", result);
         exit(-1);
-    }    
+    }
    
 }
 
