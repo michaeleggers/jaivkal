@@ -7,6 +7,8 @@
 VkalInfo :: struct {
     window : *SDL_Window;
 
+    instance : VkInstance;
+
     instance_extension_count : u32;
     instance_extensions : [..]VkExtensionProperties;
 
@@ -64,7 +66,7 @@ vkal_create_instance_sdl :: (window : *SDL_Window, instance_extensions : []strin
             exit(-1); // TODO: Figure out how to really do this in jai.
         }
         print("    SDL wants % extensions:\n", required_extension_count);
-        total_extension_count := required_extension_count + instance_extensions.count;
+        total_extension_count : u32 = required_extension_count + cast(u32)instance_extensions.count;
         // Get the required extensions that SDL tells us that we must have:
         all_instance_extensions := cast(**u8)alloc(256 * total_extension_count);
         //array_resize(*all_instance_extensions, required_extension_count);
@@ -85,18 +87,27 @@ vkal_create_instance_sdl :: (window : *SDL_Window, instance_extensions : []strin
         for i : 0..total_extension_count-1 {
             print("        %\n", to_string(all_instance_extensions[i]));
         }
+        print("\n");
 
         print("Check requested Instance Extensions:\n");
         print("------------------------------------\n");
+        supported_extensions : [..]string;
         for i : 0..total_extension_count-1 {
-            print("    Check extension: % ", to_string(all_instance_extensions[i]));
-            extension_ok := check_instance_extension_support(to_string(all_instance_extensions[i]));
+            extension_name := to_string(all_instance_extensions[i]);
+            print("    Check extension: % ", extension_name);
+            extension_ok := check_instance_extension_support(extension_name);
             if !extension_ok {
+                // TODO: Should we abort here?                
                 print("-> NOT AVAILABLE!\n");
             } else {
+                array_add(*supported_extensions, extension_name);
                 print("-> OK!\n");
             }
         }
+        create_info.enabledExtensionCount = total_extension_count;
+        create_info.ppEnabledExtensionNames = all_instance_extensions;
+        
+        print("\n");
     }
 
     // Load validation layers (always for now)
@@ -115,23 +126,32 @@ vkal_create_instance_sdl :: (window : *SDL_Window, instance_extensions : []strin
         // enable requested layers
         print("Check requested Instance Layers:\n");
         print("--------------------------------\n");
+        instance_layers_ptr := cast(**u8)alloc(256 * instance_layers.count);
         layer_ok := false;
         for instance_layers {
             print("    Check layer: % ", it);
             layer_ok = check_instance_layer_support(it);
             if !layer_ok {
+                // TODO: Should we abort here?
                 print("-> NOT AVAILABLE!\n");                
             } else {
+                instance_layers_ptr[it_index] = cast(*u8)instance_layers[it_index].data;
                 print("-> OK!\n");
             }
         }
         if layer_ok {
             create_info.enabledLayerCount = cast(u32)instance_layers.count;
-            create_info.ppEnabledLayerNames = cast(**u8)*instance_layers.data;
+            create_info.ppEnabledLayerNames = instance_layers_ptr;
         }
     }
 
+    result := vkCreateInstance(*create_info, null, *vkal_info.instance);
 
+    if result != .SUCCESS { // TODO: Will not complain about non existent layer names!!!
+        print("Sorry! vkCreateInstance failed: %\n", result);
+        exit(-1);
+    }    
+   
 }
 
 check_instance_extension_support :: (extension_name : string) -> bool {

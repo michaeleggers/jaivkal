@@ -38,6 +38,7 @@ main :: () {
 
     instanceExtensions : [..]string;    
     array_add(*instanceExtensions, VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);    
+
     instanceLayers : [..]string;
     array_add(*instanceLayers, "VK_LAYER_KHRONOS_validation"); // only in debug
     
