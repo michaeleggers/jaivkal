@@ -39,8 +39,8 @@ vkal_create_instance_sdl :: (window : *SDL_Window, instance_extensions : []strin
     {
         // See what is available on this machine
         vkEnumerateInstanceExtensionProperties(null, *vkal_info.instance_extension_count, null);
-        print("Available Instance Extension:\n");
-        print("-----------------------------\n");                
+        print("Available Instance Extensions:\n");
+        print("------------------------------\n");                
         array_resize(*vkal_info.instance_extensions, vkal_info.instance_extension_count);
         vkEnumerateInstanceExtensionProperties(null, *vkal_info.instance_extension_count, vkal_info.instance_extensions.data);
         for vkal_info.instance_extensions {
@@ -104,8 +104,8 @@ vkal_create_instance_sdl :: (window : *SDL_Window, instance_extensions : []strin
     // Load validation layers (always for now)
     {
         // Check what is available
-        print("Available Instance Layer:\n");
-        print("-------------------------\n");
+        print("Available Instance Layers:\n");
+        print("--------------------------\n");
         vkEnumerateInstanceLayerProperties(*vkal_info.instance_layer_count, null);
         array_resize(*vkal_info.instance_layers, vkal_info.instance_layer_count);
         vkEnumerateInstanceLayerProperties(*vkal_info.instance_layer_count, vkal_info.instance_layers.data);
@@ -134,15 +134,15 @@ vkal_create_instance_sdl :: (window : *SDL_Window, instance_extensions : []strin
             create_info.enabledLayerCount = cast(u32)instance_layers.count;
             create_info.ppEnabledLayerNames = instance_layers_ptr;
         }
+        print("\n");
     }
 
+    // TODO: There should be a way to make checking the VkResult polymorphic.
     result := vkCreateInstance(*create_info, null, *vkal_info.instance);
-
     if result != .SUCCESS { // TODO: Will not complain about non existent layer names!!!
         print("Sorry! vkCreateInstance failed: %\n", result);
         exit(-1);
     }
-   
 }
 
 check_instance_extension_support :: (extension_name : string) -> bool {
@@ -159,4 +159,39 @@ check_instance_layer_support :: (layer_name : string) -> bool {
     }
     
     return false;
+}
+
+vkal_find_suitable_devices :: (device_extension_names : []string) -> [..]VkPhysicalDevice {
+    print("Find Physical Devices:\n");
+    print("----------------------\n");
+    physical_device_count : u32;
+    vkEnumeratePhysicalDevices(vkal_info.instance, *physical_device_count, null);
+    if physical_device_count == 0 {
+        print("     No Physical Devices found that support Vulkan!\n");
+        exit(-1);
+    } else {
+        print("    Physical Device Count: %\n", physical_device_count);
+    }
+    print("\n");
+
+    print("Find Suitable Devices:\n");
+    print("----------------------\n");
+    suitable_device_count : u32;
+    physical_devices : [..]VkPhysicalDevice;
+    array_resize(*physical_devices, physical_device_count);
+    vkEnumeratePhysicalDevices(vkal_info.instance, *physical_device_count, physical_devices.data);
+    for physical_devices {
+        properties : VkPhysicalDeviceProperties;
+        vkGetPhysicalDeviceProperties(it, *properties);
+        print_physical_device_properties(properties);
+    }
+}
+
+print_physical_device_properties :: (properties : VkPhysicalDeviceProperties) {
+    print("Device: %\n", to_string(properties.deviceName.data));
+    print("    apiVersion: %\n", properties.apiVersion);
+    print("    driverVersion: %\n", properties.driverVersion);
+    print("    vendorID: %\n", properties.vendorID);
+    print("    deviceID: %\n", properties.deviceID);
+    print("    pipelineCacheUUID: %\n", properties.pipelineCacheUUID.data);
 }

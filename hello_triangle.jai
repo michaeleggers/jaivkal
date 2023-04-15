@@ -36,14 +36,25 @@ init_window :: () {
 main :: () {
     init_window();
 
-    instanceExtensions : [..]string;    
-    array_add(*instanceExtensions, VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);        
+    {
+        instanceExtensions : [..]string;    
+        array_add(*instanceExtensions, VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);        
 
-    instanceLayers : [..]string;
-    array_add(*instanceLayers, "VK_LAYER_KHRONOS_validation"); // only in debug
+        instanceLayers : [..]string;
+        array_add(*instanceLayers, "VK_LAYER_KHRONOS_validation"); // only in debug
+        
+        vkal_create_instance_sdl(window, instanceExtensions, instanceLayers);
+    }
+
+    {
+        deviceExtensions : [..]string;
+        array_add(*deviceExtensions, VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+        array_add(*deviceExtensions, VK_KHR_MAINTENANCE3_EXTENSION_NAME);
+        physicalDevices : [..]VkPhysicalDevice = vkal_find_suitable_devices(deviceExtensions);
+    }
     
-    vkal_create_instance_sdl(window, instanceExtensions, instanceLayers);
-    
-    // /SDL_Delay(2000);
+
+
+    // SDL_Delay(2000);
 
 }
