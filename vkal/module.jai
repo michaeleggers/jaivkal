@@ -8,12 +8,19 @@ VkalInfo :: struct {
     window : *SDL_Window;
 
     instance : VkInstance;
-
+    surface  : VkSurfaceKHR;
+    
     instance_extension_count : u32;
-    instance_extensions : [..]VkExtensionProperties;
+    instance_extensions      : [..]VkExtensionProperties;
 
     instance_layer_count : u32;
-    instance_layers : [..]VkLayerProperties;
+    instance_layers      : [..]VkLayerProperties;
+}
+
+VkalSwapChainSupportDetails :: struct {
+    capabilities  : VkSurfaceCapabilitiesKHR;
+    formats       : [..]VkSurfaceFormatKHR;
+    present_modes : [..]VkPresentModeKHR;
 }
 
 vkal_info : VkalInfo;
@@ -143,6 +150,8 @@ vkal_create_instance_sdl :: (window : *SDL_Window, instance_extensions : []strin
         print("Sorry! vkCreateInstance failed: %\n", result);
         exit(-1);
     }
+
+    SDL_Vulkan_CreateSurface(vkal_info.window, vkal_info.instance, *vkal_info.surface); // TODO: Check for success.
 }
 
 check_instance_extension_support :: (extension_name : string) -> bool {
@@ -184,6 +193,7 @@ vkal_find_suitable_devices :: (device_extension_names : []string) -> [..]VkPhysi
         properties : VkPhysicalDeviceProperties;
         vkGetPhysicalDeviceProperties(it, *properties);
         print_physical_device_properties(properties);
+        vkal_is_device_suitable(it, properties, device_extension_names);
     }
 }
 
@@ -194,4 +204,35 @@ print_physical_device_properties :: (properties : VkPhysicalDeviceProperties) {
     print("    vendorID: %\n", properties.vendorID);
     print("    deviceID: %\n", properties.deviceID);
     print("    pipelineCacheUUID: %\n", properties.pipelineCacheUUID.data);
+}
+
+vkal_is_device_suitable :: (physical_device : VkPhysicalDevice, properties : VkPhysicalDeviceProperties, extension_names : []string) -> bool {
+    swapchain_support := vkal_query_swapchain_support(physical_device);
+
+    swapchain_adequate := true;
+    if swapchain_support.formats.count == 0 || swapchain_support.present_modes.count == 0 {
+        swapchain_adequate = false;
+    }
+
+    // return vkal_device_extension_support && swapchain_adequate; // TODO: Implement
+    return true; 
+}
+
+vkal_query_swapchain_support :: (physical_device : VkPhysicalDevice) -> VkalSwapChainSupportDetails {
+    details : VkalSwapChainSupportDetails;
+
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, vkal_info.surface, *details.capabilities);
+
+    format_count : u32;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, vkal_info.surface, *format_count, null);
+    array_resize(*details.formats, format_count);
+    vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, vkal_info.surface, *format_count, details.formats.data);
+
+    present_mode_count : u32;
+    vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, vkal_info.surface, *present_mode_count, null);
+    array_resize(*details.present_modes, present_mode_count);
+    vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, vkal_info.surface, *present_mode_count, details.present_modes.data);
+
+    return details;
+    
 }
