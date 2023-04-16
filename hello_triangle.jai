@@ -50,6 +50,8 @@ main :: () {
         deviceExtensions : [..]string;
         array_add(*deviceExtensions, VK_KHR_SWAPCHAIN_EXTENSION_NAME);
         array_add(*deviceExtensions, VK_KHR_MAINTENANCE3_EXTENSION_NAME);
+        // array_add(*deviceExtensions, "DAYUM");
+
         physicalDevices : [..]VkalPhysicalDevice = vkal_find_suitable_devices(deviceExtensions);
     }
     

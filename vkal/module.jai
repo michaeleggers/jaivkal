@@ -209,15 +209,19 @@ vkal_find_suitable_devices :: (device_extension_names : []string) -> [..]VkalPhy
         vkGetPhysicalDeviceProperties(it, *properties);
         print_physical_device_properties(properties);
         if vkal_is_device_suitable(it, properties, device_extension_names) {
-            indices := find_queue_families(it, vkal_info.surface);
+            indices := vkal_find_queue_families(it, vkal_info.surface);
             if indices.has_graphics_family && indices.has_present_family {
                 array_add( *vkal_info.suitable_devices, VkalPhysicalDevice.{device = it, properties = properties} );
             }
+        } else {
+            print("DEVICE NOT SUITABLE!\n");
         }
     }
+
+    return vkal_info.suitable_devices;
 }
 
-find_queue_families :: (physical_device : VkPhysicalDevice, surface : VkSurfaceKHR) -> VkalQueueFamilyIndices {
+vkal_find_queue_families :: (physical_device : VkPhysicalDevice, surface : VkSurfaceKHR) -> VkalQueueFamilyIndices {
     queue_family_count : u32;
     vkGetPhysicalDeviceQueueFamilyProperties(physical_device, *queue_family_count, null);
     
@@ -226,6 +230,7 @@ find_queue_families :: (physical_device : VkPhysicalDevice, surface : VkSurfaceK
 
     vkGetPhysicalDeviceQueueFamilyProperties(physical_device, *queue_family_count, queue_family_properties.data);
 
+    // Can we do graphics? If not this would suck...
     queue_family_indices := VkalQueueFamilyIndices.{has_graphics_family = false, has_present_family = false};
     for queue_family_properties {
         if it.queueFlags & .GRAPHICS_BIT {
@@ -234,6 +239,19 @@ find_queue_families :: (physical_device : VkPhysicalDevice, surface : VkSurfaceK
             break;
         }
     }
+
+    // Can we present pictures to the screen or is this a boring AI card with no video-out?
+    for queue_family_properties {
+        present_support := false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(physical_device, cast(u32)it_index, surface, cast(*u32)*present_support); // TODO: Does 0/1 cast to true/false?
+        if present_support {
+            queue_family_indices.has_present_family = true;
+            queue_family_indices.present_family = cast(u32)it_index;
+            break;
+        }
+    }
+
+    return queue_family_indices;
 }
 
 print_physical_device_properties :: (properties : VkPhysicalDeviceProperties) {
@@ -243,9 +261,10 @@ print_physical_device_properties :: (properties : VkPhysicalDeviceProperties) {
     print("    vendorID: %\n", properties.vendorID);
     print("    deviceID: %\n", properties.deviceID);
     print("    pipelineCacheUUID: %\n", properties.pipelineCacheUUID.data);
+    print("\n");
 }
 
-vkal_is_device_suitable :: (physical_device : VkPhysicalDevice, properties : VkPhysicalDeviceProperties, extension_names : []string) -> bool {
+vkal_is_device_suitable :: (physical_device : VkPhysicalDevice, properties : VkPhysicalDeviceProperties, device_extension_names : []string) -> bool {
     swapchain_support := vkal_query_swapchain_support(physical_device);
 
     swapchain_adequate := true;
@@ -253,8 +272,41 @@ vkal_is_device_suitable :: (physical_device : VkPhysicalDevice, properties : VkP
         swapchain_adequate = false;
     }
 
-    // return vkal_device_extension_support && swapchain_adequate; // TODO: Implement
-    return true; 
+    return vkal_check_device_extension_support(physical_device, device_extension_names) && swapchain_adequate; // TODO: Implement    
+}
+
+vkal_check_device_extension_support :: (physical_device : VkPhysicalDevice, device_extension_names : []string) -> bool {
+    print("Check Device Extensions:\n");
+    print("------------------------\n");
+    supported_extension_count : u32;
+    vkEnumerateDeviceExtensionProperties(physical_device, null, *supported_extension_count, null);
+    available_extensions : [..]VkExtensionProperties;
+    array_resize( *available_extensions, supported_extension_count );
+    
+    vkEnumerateDeviceExtensionProperties(physical_device, null, *supported_extension_count, available_extensions.data);
+    unavailable_extensions : [..]bool;
+    array_resize( *unavailable_extensions, device_extension_names.count );
+    found_extensions_count : u32;
+    for requested_extension_name, requested_extension_index : device_extension_names {
+        current_name := requested_extension_name;
+        print("    Check Device Extension % ", current_name);
+        for available_extensions {
+            if current_name == to_string(it.extensionName.data) {
+                print("-> OK!\n");
+                unavailable_extensions[requested_extension_index] = true;
+                found_extensions_count += 1;
+                break;
+            }
+        }
+    }
+
+    for unavailable_extensions {
+        if !it {
+            print("-> NOT FOUND!\n");
+        }
+    }
+
+    return found_extensions_count == device_extension_names.count;
 }
 
 vkal_query_swapchain_support :: (physical_device : VkPhysicalDevice) -> VkalSwapChainSupportDetails {
