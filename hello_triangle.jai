@@ -46,14 +46,19 @@ main :: () {
         vkal_create_instance_sdl(window, instanceExtensions, instanceLayers);
     }
 
-    {
-        deviceExtensions : [..]string;
-        array_add(*deviceExtensions, VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-        array_add(*deviceExtensions, VK_KHR_MAINTENANCE3_EXTENSION_NAME);
-        // array_add(*deviceExtensions, "DAYUM");
+    deviceExtensions : [..]string;
+    array_add(*deviceExtensions, VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+    array_add(*deviceExtensions, VK_KHR_MAINTENANCE3_EXTENSION_NAME);
+    // array_add(*deviceExtensions, "DAYUM");
+    physicalDevices : [..]VkalPhysicalDevice = vkal_find_suitable_devices(deviceExtensions);
 
-        physicalDevices : [..]VkalPhysicalDevice = vkal_find_suitable_devices(deviceExtensions);
+    assert(physicalDevices.count > 0);
+    for physicalDevices {
+        print("Physical Device %: %\n", it_index, to_string(it.properties.deviceName.data));
     }
+
+    vkal_select_physical_device(physicalDevices[0]); // Just take the first in the list, because we know there is one.
+
     
 
 

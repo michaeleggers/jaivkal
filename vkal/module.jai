@@ -17,6 +17,8 @@ VkalInfo :: struct {
     instance_layers      : [..]VkLayerProperties;
 
     suitable_devices     : [..]VkalPhysicalDevice;
+
+    selected_physical_device : VkalPhysicalDevice;
 }
 
 VkalSwapChainSupportDetails :: struct {
@@ -217,7 +219,7 @@ vkal_find_suitable_devices :: (device_extension_names : []string) -> [..]VkalPhy
             print("DEVICE NOT SUITABLE!\n");
         }
     }
-
+    
     return vkal_info.suitable_devices;
 }
 
@@ -242,8 +244,8 @@ vkal_find_queue_families :: (physical_device : VkPhysicalDevice, surface : VkSur
 
     // Can we present pictures to the screen or is this a boring AI card with no video-out?
     for queue_family_properties {
-        present_support := false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(physical_device, cast(u32)it_index, surface, cast(*u32)*present_support); // TODO: Does 0/1 cast to true/false?
+        present_support : VkBool32;
+        vkGetPhysicalDeviceSurfaceSupportKHR(physical_device, cast(u32)it_index, surface, *present_support); // TODO: Does 0/1 cast to true/false?
         if present_support {
             queue_family_indices.has_present_family = true;
             queue_family_indices.present_family = cast(u32)it_index;
@@ -255,12 +257,12 @@ vkal_find_queue_families :: (physical_device : VkPhysicalDevice, surface : VkSur
 }
 
 print_physical_device_properties :: (properties : VkPhysicalDeviceProperties) {
-    print("Device: %\n", to_string(properties.deviceName.data));
-    print("    apiVersion: %\n", properties.apiVersion);
-    print("    driverVersion: %\n", properties.driverVersion);
-    print("    vendorID: %\n", properties.vendorID);
-    print("    deviceID: %\n", properties.deviceID);
-    print("    pipelineCacheUUID: %\n", properties.pipelineCacheUUID.data);
+    print("    Device: %\n", to_string(properties.deviceName.data));
+    print("        apiVersion: %\n", properties.apiVersion);
+    print("        driverVersion: %\n", properties.driverVersion);
+    print("        vendorID: %\n", properties.vendorID);
+    print("        deviceID: %\n", properties.deviceID);
+    print("        pipelineCacheUUID: %\n", properties.pipelineCacheUUID.data);
     print("\n");
 }
 
@@ -276,8 +278,8 @@ vkal_is_device_suitable :: (physical_device : VkPhysicalDevice, properties : VkP
 }
 
 vkal_check_device_extension_support :: (physical_device : VkPhysicalDevice, device_extension_names : []string) -> bool {
-    print("Check Device Extensions:\n");
-    print("------------------------\n");
+    print("    Check Device Extensions:\n");
+    print("    ------------------------\n");
     supported_extension_count : u32;
     vkEnumerateDeviceExtensionProperties(physical_device, null, *supported_extension_count, null);
     available_extensions : [..]VkExtensionProperties;
@@ -289,7 +291,7 @@ vkal_check_device_extension_support :: (physical_device : VkPhysicalDevice, devi
     found_extensions_count : u32;
     for requested_extension_name, requested_extension_index : device_extension_names {
         current_name := requested_extension_name;
-        print("    Check Device Extension % ", current_name);
+        print("        Check Device Extension % ", current_name);
         for available_extensions {
             if current_name == to_string(it.extensionName.data) {
                 print("-> OK!\n");
@@ -325,4 +327,8 @@ vkal_query_swapchain_support :: (physical_device : VkPhysicalDevice) -> VkalSwap
     vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, vkal_info.surface, *present_mode_count, details.present_modes.data);
 
     return details;    
+}
+
+vkal_select_physical_device :: (physical_device : VkalPhysicalDevice) {
+    vkal_info.selected_physical_device = physical_device;
 }
