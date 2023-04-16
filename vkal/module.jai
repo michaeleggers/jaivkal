@@ -15,12 +15,26 @@ VkalInfo :: struct {
 
     instance_layer_count : u32;
     instance_layers      : [..]VkLayerProperties;
+
+    suitable_devices     : [..]VkalPhysicalDevice;
 }
 
 VkalSwapChainSupportDetails :: struct {
     capabilities  : VkSurfaceCapabilitiesKHR;
     formats       : [..]VkSurfaceFormatKHR;
     present_modes : [..]VkPresentModeKHR;
+}
+
+VkalQueueFamilyIndices :: struct {
+    has_graphics_family : bool;
+    graphics_family     : u32;
+    has_present_family  : bool;
+    present_family      : u32;
+}
+
+VkalPhysicalDevice :: struct {
+    device     : VkPhysicalDevice;
+    properties : VkPhysicalDeviceProperties;
 }
 
 vkal_info : VkalInfo;
@@ -170,13 +184,14 @@ check_instance_layer_support :: (layer_name : string) -> bool {
     return false;
 }
 
-vkal_find_suitable_devices :: (device_extension_names : []string) -> [..]VkPhysicalDevice {
+vkal_find_suitable_devices :: (device_extension_names : []string) -> [..]VkalPhysicalDevice {
     print("Find Physical Devices:\n");
     print("----------------------\n");
+
     physical_device_count : u32;
     vkEnumeratePhysicalDevices(vkal_info.instance, *physical_device_count, null);
     if physical_device_count == 0 {
-        print("     No Physical Devices found that support Vulkan!\n");
+        print("    No Physical Devices found that support Vulkan!\n");
         exit(-1);
     } else {
         print("    Physical Device Count: %\n", physical_device_count);
@@ -193,7 +208,31 @@ vkal_find_suitable_devices :: (device_extension_names : []string) -> [..]VkPhysi
         properties : VkPhysicalDeviceProperties;
         vkGetPhysicalDeviceProperties(it, *properties);
         print_physical_device_properties(properties);
-        vkal_is_device_suitable(it, properties, device_extension_names);
+        if vkal_is_device_suitable(it, properties, device_extension_names) {
+            indices := find_queue_families(it, vkal_info.surface);
+            if indices.has_graphics_family && indices.has_present_family {
+                array_add( *vkal_info.suitable_devices, VkalPhysicalDevice.{device = it, properties = properties} );
+            }
+        }
+    }
+}
+
+find_queue_families :: (physical_device : VkPhysicalDevice, surface : VkSurfaceKHR) -> VkalQueueFamilyIndices {
+    queue_family_count : u32;
+    vkGetPhysicalDeviceQueueFamilyProperties(physical_device, *queue_family_count, null);
+    
+    queue_family_properties : [..]VkQueueFamilyProperties;
+    array_resize( *queue_family_properties, queue_family_count );
+
+    vkGetPhysicalDeviceQueueFamilyProperties(physical_device, *queue_family_count, queue_family_properties.data);
+
+    queue_family_indices := VkalQueueFamilyIndices.{has_graphics_family = false, has_present_family = false};
+    for queue_family_properties {
+        if it.queueFlags & .GRAPHICS_BIT {
+            queue_family_indices.has_graphics_family = true;
+            queue_family_indices.graphics_family = cast(u32)it_index; // TODO: it_index is s64. Find out why. Reread how_to!!!
+            break;
+        }
     }
 }
 
@@ -233,6 +272,5 @@ vkal_query_swapchain_support :: (physical_device : VkPhysicalDevice) -> VkalSwap
     array_resize(*details.present_modes, present_mode_count);
     vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, vkal_info.surface, *present_mode_count, details.present_modes.data);
 
-    return details;
-    
+    return details;    
 }
