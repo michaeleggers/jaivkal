@@ -109,7 +109,7 @@ vkal_create_instance_sdl :: (window : *SDL_Window, instance_extensions : []strin
         for i : 0..total_extension_count-1 {
             extension_name := to_string(all_instance_extensions[i]);
             print("    Check extension: % ", extension_name);
-            extension_ok := check_instance_extension_support(extension_name);
+            extension_ok := vkal_check_instance_extension_support(extension_name);
             if !extension_ok {
                 // TODO: Should we abort here?                
                 print("-> NOT AVAILABLE!\n");
@@ -144,7 +144,7 @@ vkal_create_instance_sdl :: (window : *SDL_Window, instance_extensions : []strin
         layer_ok := false;
         for instance_layers {
             print("    Check layer: % ", it);
-            layer_ok = check_instance_layer_support(it);
+            layer_ok = vkal_check_instance_layer_support(it);
             if !layer_ok {
                 // TODO: Should we abort here?
                 print("-> NOT AVAILABLE!\n");                
@@ -160,17 +160,17 @@ vkal_create_instance_sdl :: (window : *SDL_Window, instance_extensions : []strin
         print("\n");
     }
 
-    // TODO: There should be a way to make checking the VkResult polymorphic.
-    result := vkCreateInstance(*create_info, null, *vkal_info.instance);
-    if result != .SUCCESS { // TODO: Will not complain about non existent layer names!!!
-        print("Sorry! vkCreateInstance failed: %\n", result);
-        exit(-1);
-    }
+    // TODO: There should be a way to also print the calling function name?
+    vkal_check_result(vkCreateInstance(*create_info, null, *vkal_info.instance));
 
     SDL_Vulkan_CreateSurface(vkal_info.window, vkal_info.instance, *vkal_info.surface); // TODO: Check for success.
 }
 
-check_instance_extension_support :: (extension_name : string) -> bool {
+vkal_check_result :: (result : VkResult) {
+    assert(result == .SUCCESS, "VkResult was %\n", result);
+}
+
+vkal_check_instance_extension_support :: (extension_name : string) -> bool {
     for vkal_info.instance_extensions {
         if to_string(it.extensionName.data) == extension_name return true;
     }
@@ -178,7 +178,7 @@ check_instance_extension_support :: (extension_name : string) -> bool {
     return false;
 }
 
-check_instance_layer_support :: (layer_name : string) -> bool {        
+vkal_check_instance_layer_support :: (layer_name : string) -> bool {        
     for vkal_info.instance_layers {        
         if to_string(it.layerName.data) == layer_name return true;
     }
