@@ -1,9 +1,11 @@
 #import "Basic";
 #import "SDL";
 #import "String";
-#import "Vulkan";
+// #import "Vulkan";
+#import "Windows";
 
-//#import,dir "osor_vulkan";
+#import  "osor_vulkan";
+
 #import,dir "vkal";
 
 
@@ -36,6 +38,10 @@ init_window :: () {
 main :: () {
     init_window();
 
+    vulkan_library := LoadLibraryA("vulkan-1.dll");
+
+    load_vulkan_loader_procedures(vulkan_library , GetProcAddress);
+
     {
         instanceExtensions : [..]string;    
         array_add(*instanceExtensions, VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);        
@@ -43,7 +49,8 @@ main :: () {
         instanceLayers : [..]string;
         array_add(*instanceLayers, "VK_LAYER_KHRONOS_validation"); // only in debug
         
-        vkal_create_instance_sdl(window, instanceExtensions, instanceLayers);
+        vulkanInstance := vkal_create_instance_sdl(window, instanceExtensions, instanceLayers);        
+        load_vulkan_instance_procedures(vulkanInstance);
     }
 
     deviceExtensions : [..]string;
@@ -58,10 +65,10 @@ main :: () {
     }
 
     vkal_select_physical_device(physicalDevices[0]); // Just take the first in the list, because we know there is one.
-
     
-
-
+    logicalDevice := vkal_create_logical_device(deviceExtensions, .{});
+    // load_vulkan_device_procedures(logicalDevice);
+    
     // SDL_Delay(2000);
 
 }

@@ -1,8 +1,7 @@
 #import "Basic";
 #import "SDL";
-#import "Vulkan";
-
-//#import,dir "../osor_vulkan";
+// #import "Vulkan";
+#import "osor_vulkan";
 
 VkalInfo :: struct {
     window : *SDL_Window;
@@ -19,6 +18,8 @@ VkalInfo :: struct {
     suitable_devices     : [..]VkalPhysicalDevice;
 
     selected_physical_device : VkalPhysicalDevice;
+
+    queue_family_indices : VkalQueueFamilyIndices;
 }
 
 VkalSwapChainSupportDetails :: struct {
@@ -39,17 +40,25 @@ VkalPhysicalDevice :: struct {
     properties : VkPhysicalDeviceProperties;
 }
 
+VkalWantedFeatures :: struct {
+    features11                      : VkPhysicalDeviceVulkan11Features;
+    features12                      : VkPhysicalDeviceVulkan12Features;
+    rayTracingPipelineFeatures      : VkPhysicalDeviceRayTracingPipelineFeaturesKHR;
+    accelerationStructureFeatures   : VkPhysicalDeviceAccelerationStructureFeaturesKHR;
+    features2                       : VkPhysicalDeviceFeatures2;
+}
+
 vkal_info : VkalInfo;
 
-vkal_create_instance_sdl :: (window : *SDL_Window, instance_extensions : []string, instance_layers : []string) {
+vkal_create_instance_sdl :: (window : *SDL_Window, instance_extensions : []string, instance_layers : []string) -> VkInstance {
     vkal_info.window = window;
     
     app_info := VkApplicationInfo.{
-        sType = .VK_STRUCTURE_TYPE_APPLICATION_INFO ,
+        sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
         pApplicationName = "vulkan application",
-        applicationVersion = VK_MAKE_VERSION(0, 0, 1),
+        applicationVersion = VK_MAKE_API_VERSION(0, 0, 1, 0),
         pEngineName = "cool vulkan rendering engine!",
-        engineVersion = VK_MAKE_VERSION(0, 0, 1),
+        engineVersion = VK_MAKE_API_VERSION(0, 0, 1, 0),
         apiVersion = VK_API_VERSION_1_3
     };
 
@@ -162,12 +171,14 @@ vkal_create_instance_sdl :: (window : *SDL_Window, instance_extensions : []strin
 
     // TODO: There should be a way to make checking the VkResult polymorphic.
     result := vkCreateInstance(*create_info, null, *vkal_info.instance);
-    if result != .SUCCESS { // TODO: Will not complain about non existent layer names!!!
+    if result != VK_SUCCESS { // TODO: Will not complain about non existent layer names!!!
         print("Sorry! vkCreateInstance failed: %\n", result);
         exit(-1);
     }
 
     SDL_Vulkan_CreateSurface(vkal_info.window, vkal_info.instance, *vkal_info.surface); // TODO: Check for success.
+
+    return vkal_info.instance;
 }
 
 check_instance_extension_support :: (extension_name : string) -> bool {
@@ -233,11 +244,11 @@ vkal_find_queue_families :: (physical_device : VkPhysicalDevice, surface : VkSur
     vkGetPhysicalDeviceQueueFamilyProperties(physical_device, *queue_family_count, queue_family_properties.data);
 
     // Can we do graphics? If not this would suck...
-    queue_family_indices := VkalQueueFamilyIndices.{has_graphics_family = false, has_present_family = false};
+    vkal_info.queue_family_indices = VkalQueueFamilyIndices.{has_graphics_family = false, has_present_family = false};
     for queue_family_properties {
-        if it.queueFlags & .GRAPHICS_BIT {
-            queue_family_indices.has_graphics_family = true;
-            queue_family_indices.graphics_family = cast(u32)it_index; // TODO: it_index is s64. Find out why. Reread how_to!!!
+        if it.queueFlags & VK_QUEUE_GRAPHICS_BIT {
+            vkal_info.queue_family_indices.has_graphics_family = true;
+            vkal_info.queue_family_indices.graphics_family = cast(u32)it_index; // TODO: it_index is s64. Find out why. Reread how_to!!!
             break;
         }
     }
@@ -247,13 +258,13 @@ vkal_find_queue_families :: (physical_device : VkPhysicalDevice, surface : VkSur
         present_support : VkBool32;
         vkGetPhysicalDeviceSurfaceSupportKHR(physical_device, cast(u32)it_index, surface, *present_support); // TODO: Does 0/1 cast to true/false?
         if present_support {
-            queue_family_indices.has_present_family = true;
-            queue_family_indices.present_family = cast(u32)it_index;
+            vkal_info.queue_family_indices.has_present_family = true;
+            vkal_info.queue_family_indices.present_family = cast(u32)it_index;
             break;
         }
     }
 
-    return queue_family_indices;
+    return vkal_info.queue_family_indices;
 }
 
 print_physical_device_properties :: (properties : VkPhysicalDeviceProperties) {
@@ -278,8 +289,8 @@ vkal_is_device_suitable :: (physical_device : VkPhysicalDevice, properties : VkP
 }
 
 vkal_check_device_extension_support :: (physical_device : VkPhysicalDevice, device_extension_names : []string) -> bool {
-    print("    Check Device Extensions:\n");
-    print("    ------------------------\n");
+    print("    Check requested Device Extensions:\n");
+    print("    ----------------------------------\n");
     supported_extension_count : u32;
     vkEnumerateDeviceExtensionProperties(physical_device, null, *supported_extension_count, null);
     available_extensions : [..]VkExtensionProperties;
@@ -331,4 +342,12 @@ vkal_query_swapchain_support :: (physical_device : VkPhysicalDevice) -> VkalSwap
 
 vkal_select_physical_device :: (physical_device : VkalPhysicalDevice) {
     vkal_info.selected_physical_device = physical_device;
+}
+
+/* 
+    There actually is not really such a thing as a logical device but we use the VkDevice handle
+    created by this function as a way to communicate with the actual GPU.
+*/
+vkal_create_logical_device :: (device_extension_names : []string, features : VkalWantedFeatures) -> VkDevice {
+
 }
