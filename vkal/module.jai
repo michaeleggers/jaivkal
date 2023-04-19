@@ -378,14 +378,39 @@ vkal_create_logical_device :: (device_extension_names : []string, wanted_feature
     // features.features11.pNext = *features.features12;
     // features.features12.pNext = *features.rayTracingPipelineFeatures;
     // features.rayTracingPipelineFeatures.pNext = *vulkan_features.accelerationStructureFeatures;
-
     
-    using, map(print_feature_fields) featuress : VkalWantedFeatures;
+    // Remove later
+    MyType :: struct {
+        a : u32;
+        b : float64;
+    }
 
-    print_feature_fields :: (names: []string) {
-        for * names {
-            print("%: \n", << it);            
+    print_fields_of_type :: ($T: Type) {
+        #run {
+            print("% \n", T);            
+            print("Type Info: %\n", type_info(T));
+            ti_T := type_info(T);
+            print("%\n", << ti_T);
+        }
+    }
+    
+    print_fields_of_type(MyType);
+
+
+    print_fields_of_value :: (value: $T) {
+        #run {
+            print("% \n", T);            
+            print("Type Info: %\n", type_info(T));
+            ti_T := type_info(T);
+            print("%\n", << ti_T);
         }
     }
 
+    
+    myThing : MyType;
+    print_fields_of_value(myThing);
+    // !Remove later
+
+    // TODO: Find out how to do this for Enums so we can actually create the feature-chain and set the wanted_features
+    //       at compile time.
 }
