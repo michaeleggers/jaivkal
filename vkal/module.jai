@@ -348,6 +348,44 @@ vkal_select_physical_device :: (physical_device : VkalPhysicalDevice) {
     There actually is not really such a thing as a logical device but we use the VkDevice handle
     created by this function as a way to communicate with the actual GPU.
 */
-vkal_create_logical_device :: (device_extension_names : []string, features : VkalWantedFeatures) -> VkDevice {
+vkal_create_logical_device :: (device_extension_names : []string, wanted_features : []VkStructureType) -> VkDevice {
+    unique_queue_families : [2]u32;
+    unique_queue_families[0] = vkal_info.queue_family_indices.graphics_family;
+    unique_queue_families[1] = vkal_info.queue_family_indices.present_family;
+    
+    queue_create_infos : [2]VkDeviceQueueCreateInfo;
+    info_count : u32;
+    if vkal_info.queue_family_indices.graphics_family != vkal_info.queue_family_indices.present_family {
+        info_count = 2;
+    } else {
+        info_count = 1;
+    }
+
+    queue_prio : float32;
+    for i : 0..info_count {
+        queue_create_infos[i] = VkDeviceQueueCreateInfo.{
+            sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+            queueFamilyIndex = unique_queue_families[i],
+            queueCount = 1,
+            pQueuePriorities = *queue_prio
+        };
+    }
+
+    // features.features11.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+    // features.features12.sType = VK_STRUCTURE_TYPE_PHYISCAL_DEVICE_VULKAN_1_2_FEATURES;
+    // features.rayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+    // features.accelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+    // features.features11.pNext = *features.features12;
+    // features.features12.pNext = *features.rayTracingPipelineFeatures;
+    // features.rayTracingPipelineFeatures.pNext = *vulkan_features.accelerationStructureFeatures;
+
+    
+    using, map(print_feature_fields) featuress : VkalWantedFeatures;
+
+    print_feature_fields :: (names: []string) {
+        for * names {
+            print("%: \n", << it);            
+        }
+    }
 
 }

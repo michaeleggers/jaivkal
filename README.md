@@ -6,6 +6,11 @@ Those notes are just for me (for now). Still experimenting...
 - SDL: Add SDL_vulkan.jai and load the function pointers through #foreign SDL2, eg. for SDL_Vulkan_GetInstanceExtensions
 - Vulkan: Add Vulkan 1.3 (check the compile time execution #run)
 
+## TODOs
+- At the moment every function in vkal is prefixed with vkal_. This comes from me using stuff like C a lot.
+  I think there is a way to do namespaces in jai.
+
+
 ## Version history
 ### 4/18/2023
 - Use https://github.com/osor-io/osor_vulkan/tree/master/generate_code to generat vulkan 'header' and 

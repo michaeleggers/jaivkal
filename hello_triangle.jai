@@ -39,7 +39,6 @@ main :: () {
     init_window();
 
     vulkan_library := LoadLibraryA("vulkan-1.dll");
-
     load_vulkan_loader_procedures(vulkan_library , GetProcAddress);
 
     {
@@ -66,7 +65,8 @@ main :: () {
 
     vkal_select_physical_device(physicalDevices[0]); // Just take the first in the list, because we know there is one.
     
-    logicalDevice := vkal_create_logical_device(deviceExtensions, .{});
+    wantedFeatures : VkalWantedFeatures;
+    logicalDevice := vkal_create_logical_device(deviceExtensions, .[VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES]);
     // load_vulkan_device_procedures(logicalDevice);
     
     // SDL_Delay(2000);
