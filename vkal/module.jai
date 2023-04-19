@@ -391,10 +391,17 @@ vkal_create_logical_device :: (device_extension_names : []string, wanted_feature
             print("Type Info: %\n", type_info(T));
             ti_T := type_info(T);
             print("%\n", << ti_T);
+            for member : ti_T.members {
+                type_of_member := member.type;
+                print("   Name: %\n", member.name);
+                print("   Type: %\n", << type_of_member);
+                print("   Type Address: %\n", type_of_member);
+                // How can I get the name of the type?
+            }
         }
     }
     
-    print_fields_of_type(MyType);
+    // print_fields_of_type(MyType);
 
 
     print_fields_of_value :: (value: $T) {
@@ -408,8 +415,11 @@ vkal_create_logical_device :: (device_extension_names : []string, wanted_feature
 
     
     myThing : MyType;
-    print_fields_of_value(myThing);
+    // print_fields_of_value(myThing);
     // !Remove later
+
+    #run print("fields VkalWantedFeatues\n");
+    print_fields_of_type(VkalWantedFeatures);
 
     // TODO: Find out how to do this for Enums so we can actually create the feature-chain and set the wanted_features
     //       at compile time.
