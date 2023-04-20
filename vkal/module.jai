@@ -449,14 +449,49 @@ vkal_create_logical_device :: (device_extension_names : []string, wanted_feature
     // }
 
     features11_ptr := *features11;
-    features11_ti := type_info(VkPhysicalDeviceVulkan11Features);
-    for member : features11_ti.members {
-        print("Name: %, Value: %\n", member.name,  << features11_ptr);
-        features11_ptr += 1;
+    wanted_features11_ptr := *wanted_features.features11;
+    features11_ti := type_info(type_of(features11));
+
+
+    print("Value: %\n", (<< wanted_features11_ptr));
+    
+    thing := << wanted_features11_ptr;
+    print("Thing: %\n", thing);
+    sType :: type_of(thing.sType);
+    print("type of sType of thing: %\n", sType);
+    
+    FeatureHeader :: struct {
+        sType : VkStructureType;
+        pNext := null;
     }
 
+    current_field_ptr := cast(*u8)wanted_features11_ptr + size_of(FeatureHeader);
+    end_of_features11_ptr := cast(*u8)wanted_features11_ptr + size_of(type_of(wanted_features.features11));
+    while current_field_ptr != end_of_features11_ptr {
+        bool_ptr := cast(*VkBool32)current_field_ptr;
+        type_of_field := type_of(<< current_field_ptr);
+        print("Field: ");
+        print("type: %, ", type_of_field);
+        print("value: %", << current_field_ptr);
+        break;
+
+    }
+
+
+    // Check out 030_any and 170_modify for more info about type-stuff...
     
+    print("\n\n");
+    for member : features11_ti.members {            
+        print("Name: %, Type: %, Runtime-Size: %\n", member.name, member.type.type, member.type.runtime_size);
+        
+        print("    %\n\n", member);
+        
 
-
+        // print("Name: %, Value: %\n", member.name,  << features11_ptr);
+        // print("\n");
+        // print("Value: %\n", (<< wanted_features11_ptr));
+        // thing := << wanted_features11_ptr;
+        
+    }
 
 }
