@@ -348,7 +348,7 @@ vkal_select_physical_device :: (physical_device : VkalPhysicalDevice) {
     There actually is not really such a thing as a logical device but we use the VkDevice handle
     created by this function as a way to communicate with the actual GPU.
 */
-vkal_create_logical_device :: (device_extension_names : []string, wanted_features : []VkStructureType) -> VkDevice {
+vkal_create_logical_device :: (device_extension_names : []string, wanted_features : VkalWantedFeatures) -> VkDevice {
     unique_queue_families : [2]u32;
     unique_queue_families[0] = vkal_info.queue_family_indices.graphics_family;
     unique_queue_families[1] = vkal_info.queue_family_indices.present_family;
@@ -379,6 +379,8 @@ vkal_create_logical_device :: (device_extension_names : []string, wanted_feature
     // features.features12.pNext = *features.rayTracingPipelineFeatures;
     // features.rayTracingPipelineFeatures.pNext = *vulkan_features.accelerationStructureFeatures;
     
+
+    /*
     // Remove later
     MyType :: struct {
         a : u32;
@@ -396,6 +398,11 @@ vkal_create_logical_device :: (device_extension_names : []string, wanted_feature
                 print("   Name: %\n", member.name);
                 print("   Type: %\n", << type_of_member);
                 print("   Type Address: %\n", type_of_member);
+                for member : type_of_member.members {
+
+                }
+                
+
                 // How can I get the name of the type?
             }
         }
@@ -421,6 +428,35 @@ vkal_create_logical_device :: (device_extension_names : []string, wanted_feature
     #run print("fields VkalWantedFeatues\n");
     print_fields_of_type(VkalWantedFeatures);
 
+    */
+
     // TODO: Find out how to do this for Enums so we can actually create the feature-chain and set the wanted_features
     //       at compile time.
+
+    
+    // Query what features are available for this device
+    features11 := VkPhysicalDeviceVulkan11Features.{ sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES };
+    features12 := VkPhysicalDeviceVulkan12Features.{ sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES, pNext = *features11 };
+    raytracing_features := VkPhysicalDeviceRayTracingPipelineFeaturesKHR.{ sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR, pNext = *features12 };
+    accelerationstruct_features := VkPhysicalDeviceAccelerationStructureFeaturesKHR.{ sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR, pNext = *raytracing_features };
+    features2 := VkPhysicalDeviceFeatures2.{ sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, pNext = *accelerationstruct_features };
+    vkGetPhysicalDeviceFeatures2(vkal_info.selected_physical_device.device, *features2);
+
+    /* Check features2 (which now contains VkPhysicalDeviceFeatures) */
+    // vk_structure_type_names := #run enum_names(VkStructureType);
+    // for * vk_structure_type_names {
+    //     print("%\n", << it);
+    // }
+
+    features11_ptr := *features11;
+    features11_ti := type_info(VkPhysicalDeviceVulkan11Features);
+    for member : features11_ti.members {
+        print("Name: %, Value: %\n", member.name,  << features11_ptr);
+        features11_ptr += 1;
+    }
+
+    
+
+
+
 }

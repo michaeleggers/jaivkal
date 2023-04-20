@@ -66,7 +66,9 @@ main :: () {
     vkal_select_physical_device(physicalDevices[0]); // Just take the first in the list, because we know there is one.
     
     wantedFeatures : VkalWantedFeatures;
-    logicalDevice := vkal_create_logical_device(deviceExtensions, .[VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES]);
+    wantedFeatures.features12.runtimeDescriptorArray = VK_TRUE;
+    wantedFeatures.features12.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+    logicalDevice := vkal_create_logical_device(deviceExtensions, wantedFeatures);
     // load_vulkan_device_procedures(logicalDevice);
     
     // SDL_Delay(2000);
