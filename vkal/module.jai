@@ -448,69 +448,30 @@ vkal_create_logical_device :: (device_extension_names : []string, wanted_feature
     //     print("%\n", << it);
     // }
 
+    vkal_check_feature(wanted_features.features11, features11);
 
-    features11_ptr := *features11;
-    wanted_features11_ptr := *wanted_features.features11;
-    features11_ti := type_info(type_of(features11));
-
-
-    print("Value: %\n", (<< wanted_features11_ptr));
     
-    thing := << wanted_features11_ptr;
-    print("Thing: %\n", thing);
-    sType :: type_of(thing.sType);
-    print("type of sType of thing: %\n", sType);
-    
-    FeatureHeader :: struct {
-        sType : VkStructureType;
-        pNext := null;
-    }
 
-    current_field_ptr := cast(*u8)wanted_features11_ptr + size_of(FeatureHeader);
-    end_of_features11_ptr := cast(*u8)wanted_features11_ptr + size_of(type_of(wanted_features.features11));
-    while current_field_ptr != end_of_features11_ptr {
-        bool_ptr := cast(*VkBool32)current_field_ptr;
-        type_of_field := type_of(<< current_field_ptr);
-        print("Field: ");
-        print("type: %, ", type_of_field);
-        print("value: %", << current_field_ptr);
-        break;
+}
 
-    }
+vkal_check_feature :: (wanted_features : VkPhysicalDeviceVulkan11Features, available_features : VkPhysicalDeviceVulkan11Features) {
 
 
-    // Check out 030_any and 170_modify for more info about type-stuff...
+    gen_code :: (name : string) -> string #expand {
+        return tprint("if wanted_features.% && !available_features.% print(\"fuck!!!\");", name, name);
+    };
 
-    wanted_features11_ptr_as_u8 := cast(*u8)(*wanted_features.features11);
-    features11_ptr_as_u8 := cast(*u8)*features11;
-    print("\n\n");
-    for member : features11_ti.members {            
-        print("Name: %, Type: %, Runtime-Size: %\n", member.name, member.type.type, member.type.runtime_size);
-        print("    %\n", member);
-
-        field_type_info := cast(*Type_Info)member.type;
-        print("    Thing: %\n", field_type_info.type);
-
-
-        wanted_feature_value := << cast(*VkBool32)wanted_features11_ptr_as_u8;
-        features_value := << cast(*VkBool32)features11_ptr_as_u8;
-        print("    Wanted Features11-Value: %\n", wanted_feature_value);
-        print("    Features11-Value: %\n", features_value);
-        if wanted_feature_value && !features_value {
-            print("########## FEATURE % not supported! #########\n", member.name);
+    #run {    
+    for member : type_info(VkPhysicalDeviceVulkan11Features).members {
+        if member.name != "sType" && member.name != "pNext" {
+            print("Check feature: %\n", member.name);
+            name := member.name;
+            // #insert "print(\"if wanted_features.% && !available_features.%\", name, name);"; // This works
+            // #insert #run gen_code(name); // this does not!
+            print("\n");
+            
         }
-
-        wanted_features11_ptr_as_u8 = wanted_features11_ptr_as_u8 + member.type.runtime_size;
-        features11_ptr_as_u8 = features11_ptr_as_u8 + member.type.runtime_size;
-
-        print("\n\n");
-        
-
-        // print("Name: %, Value: %\n", member.name,  << features11_ptr);
-        // print("\n");
-        // print("Value: %\n", (<< wanted_features11_ptr));
-        // thing := << wanted_features11_ptr;
-        
+    }
     }
 
 }
