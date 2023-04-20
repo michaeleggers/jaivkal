@@ -448,6 +448,7 @@ vkal_create_logical_device :: (device_extension_names : []string, wanted_feature
     //     print("%\n", << it);
     // }
 
+
     features11_ptr := *features11;
     wanted_features11_ptr := *wanted_features.features11;
     features11_ti := type_info(type_of(features11));
@@ -479,12 +480,30 @@ vkal_create_logical_device :: (device_extension_names : []string, wanted_feature
 
 
     // Check out 030_any and 170_modify for more info about type-stuff...
-    
+
+    wanted_features11_ptr_as_u8 := cast(*u8)(*wanted_features.features11);
+    features11_ptr_as_u8 := cast(*u8)*features11;
     print("\n\n");
     for member : features11_ti.members {            
         print("Name: %, Type: %, Runtime-Size: %\n", member.name, member.type.type, member.type.runtime_size);
-        
-        print("    %\n\n", member);
+        print("    %\n", member);
+
+        field_type_info := cast(*Type_Info)member.type;
+        print("    Thing: %\n", field_type_info.type);
+
+
+        wanted_feature_value := << cast(*VkBool32)wanted_features11_ptr_as_u8;
+        features_value := << cast(*VkBool32)features11_ptr_as_u8;
+        print("    Wanted Features11-Value: %\n", wanted_feature_value);
+        print("    Features11-Value: %\n", features_value);
+        if wanted_feature_value && !features_value {
+            print("########## FEATURE % not supported! #########\n", member.name);
+        }
+
+        wanted_features11_ptr_as_u8 = wanted_features11_ptr_as_u8 + member.type.runtime_size;
+        features11_ptr_as_u8 = features11_ptr_as_u8 + member.type.runtime_size;
+
+        print("\n\n");
         
 
         // print("Name: %, Value: %\n", member.name,  << features11_ptr);

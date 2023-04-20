@@ -66,6 +66,9 @@ main :: () {
     vkal_select_physical_device(physicalDevices[0]); // Just take the first in the list, because we know there is one.
     
     wantedFeatures : VkalWantedFeatures;
+    wantedFeatures.features11.multiviewTessellationShader = VK_TRUE;
+    wantedFeatures.features11.shaderDrawParameters = VK_TRUE;
+    
     wantedFeatures.features12.runtimeDescriptorArray = VK_TRUE;
     wantedFeatures.features12.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
     logicalDevice := vkal_create_logical_device(deviceExtensions, wantedFeatures);
