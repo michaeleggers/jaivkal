@@ -371,68 +371,8 @@ vkal_create_logical_device :: (device_extension_names : []string, wanted_feature
         };
     }
 
-    // features.features11.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
-    // features.features12.sType = VK_STRUCTURE_TYPE_PHYISCAL_DEVICE_VULKAN_1_2_FEATURES;
-    // features.rayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
-    // features.accelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
-    // features.features11.pNext = *features.features12;
-    // features.features12.pNext = *features.rayTracingPipelineFeatures;
-    // features.rayTracingPipelineFeatures.pNext = *vulkan_features.accelerationStructureFeatures;
-    
-
-    /*
-    // Remove later
-    MyType :: struct {
-        a : u32;
-        b : float64;
-    }
-
-    print_fields_of_type :: ($T: Type) {
-        #run {
-            print("% \n", T);            
-            print("Type Info: %\n", type_info(T));
-            ti_T := type_info(T);
-            print("%\n", << ti_T);
-            for member : ti_T.members {
-                type_of_member := member.type;
-                print("   Name: %\n", member.name);
-                print("   Type: %\n", << type_of_member);
-                print("   Type Address: %\n", type_of_member);
-                for member : type_of_member.members {
-
-                }
-                
-
-                // How can I get the name of the type?
-            }
-        }
-    }
-    
-    // print_fields_of_type(MyType);
-
-
-    print_fields_of_value :: (value: $T) {
-        #run {
-            print("% \n", T);            
-            print("Type Info: %\n", type_info(T));
-            ti_T := type_info(T);
-            print("%\n", << ti_T);
-        }
-    }
-
-    
-    myThing : MyType;
-    // print_fields_of_value(myThing);
-    // !Remove later
-
-    #run print("fields VkalWantedFeatues\n");
-    print_fields_of_type(VkalWantedFeatures);
-
-    */
-
     // TODO: Find out how to do this for Enums so we can actually create the feature-chain and set the wanted_features
     //       at compile time.
-
     
     // Query what features are available for this device
     features11 := VkPhysicalDeviceVulkan11Features.{ sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES };
@@ -448,51 +388,18 @@ vkal_create_logical_device :: (device_extension_names : []string, wanted_feature
     //     print("%\n", << it);
     // }
 
-    vkal_check_feature(wanted_features.features11, features11);
+    vkal_check_feature(wanted_features.features11.multiviewTessellationShader, features11.multiviewTessellationShader);
+    vkal_check_feature(wanted_features.features11.shaderDrawParameters, features11.shaderDrawParameters);
 
     
 
 }
 
-vkal_check_feature :: (wanted_features : VkPhysicalDeviceVulkan11Features, available_features : VkPhysicalDeviceVulkan11Features) {
-
-
-    gen_code :: (c : Code) #expand {        
-        // return tprint("if wanted_features.% && !available_features.% print(\"hello there!!!\");", name, name);
-        #insert c;
-    };
-
-    run_code :: (s : string) #expand {
-        #insert s;
+vkal_check_feature :: (wanted_feature : VkBool32, available_feature : VkBool32) #expand {
+    print("%\n", available_feature);
+    if wanted_feature && !available_feature {
+        print("Sorry! Feature not available.\n");
+    } else {
+        print("OK!\n");
     }
-    
-    do_stuff :: () -> Code #expand {    
-        for member : type_info(VkPhysicalDeviceVulkan11Features).members {
-            if member.name != "sType" && member.name != "pNext" {
-                print("Check feature: %\n", member.name);
-                name := member.name;
-                // #insert "print(\"if wanted_features.% && !available_features.%\", name, name);"; // This works
-                // #insert gen_code(name); // this does not!
-
-                thing : Code;
-                c : Code : #code { 
-                    thing = #code { tprint("if wanted_features.% && !available_features.% print(\"hello there!!!\");", name, name); };
-                      
-                };
-                gen_code(c);
-                return thing;
-
-
-                print("\n");
-                
-            }
-        }
-    }
-
-    test_code := #run do_stuff();
-    
-    // #insert test_code;
-
-
-
 }
