@@ -388,18 +388,22 @@ vkal_create_logical_device :: (device_extension_names : []string, wanted_feature
     //     print("%\n", << it);
     // }
 
+    print("Features11:\n");
+    print("Available\n%\n", features11); // maybe check print function implementation -> I mean it can inspect the object just fine!
+    print("\n");
+    print("Wanted\n%\n", wanted_features.features11);
+    // TODO: do more checks later. Maybe get back to compile time generating this code when I know more about it.
     vkal_check_feature(wanted_features.features11.multiviewTessellationShader, features11.multiviewTessellationShader);
     vkal_check_feature(wanted_features.features11.shaderDrawParameters, features11.shaderDrawParameters);
+    vkal_check_feature(wanted_features.features12.runtimeDescriptorArray, features12.runtimeDescriptorArray);
+    vkal_check_feature(wanted_features.features12.shaderSampledImageArrayNonUniformIndexing, features12.shaderSampledImageArrayNonUniformIndexing);
 
     
 
 }
 
-vkal_check_feature :: (wanted_feature : VkBool32, available_feature : VkBool32) #expand {
-    print("%\n", available_feature);
+vkal_check_feature :: (wanted_feature : VkBool32, available_feature : VkBool32) #expand {    
     if wanted_feature && !available_feature {
-        print("Sorry! Feature not available.\n");
-    } else {
-        print("OK!\n");
-    }
+        print("Feature not available: TODO: Print feature name here!!!\n");
+    }     
 }
