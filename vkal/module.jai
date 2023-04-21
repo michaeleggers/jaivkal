@@ -457,21 +457,42 @@ vkal_create_logical_device :: (device_extension_names : []string, wanted_feature
 vkal_check_feature :: (wanted_features : VkPhysicalDeviceVulkan11Features, available_features : VkPhysicalDeviceVulkan11Features) {
 
 
-    gen_code :: (name : string) -> string #expand {
-        return tprint("if wanted_features.% && !available_features.% print(\"fuck!!!\");", name, name);
+    gen_code :: (c : Code) #expand {        
+        // return tprint("if wanted_features.% && !available_features.% print(\"hello there!!!\");", name, name);
+        #insert c;
     };
 
-    #run {    
-    for member : type_info(VkPhysicalDeviceVulkan11Features).members {
-        if member.name != "sType" && member.name != "pNext" {
-            print("Check feature: %\n", member.name);
-            name := member.name;
-            // #insert "print(\"if wanted_features.% && !available_features.%\", name, name);"; // This works
-            // #insert #run gen_code(name); // this does not!
-            print("\n");
-            
+    run_code :: (s : string) #expand {
+        #insert s;
+    }
+    
+    do_stuff :: () -> Code #expand {    
+        for member : type_info(VkPhysicalDeviceVulkan11Features).members {
+            if member.name != "sType" && member.name != "pNext" {
+                print("Check feature: %\n", member.name);
+                name := member.name;
+                // #insert "print(\"if wanted_features.% && !available_features.%\", name, name);"; // This works
+                // #insert gen_code(name); // this does not!
+
+                thing : Code;
+                c : Code : #code { 
+                    thing = #code { tprint("if wanted_features.% && !available_features.% print(\"hello there!!!\");", name, name); };
+                      
+                };
+                gen_code(c);
+                return thing;
+
+
+                print("\n");
+                
+            }
         }
     }
-    }
+
+    test_code := #run do_stuff();
+    
+    // #insert test_code;
+
+
 
 }
